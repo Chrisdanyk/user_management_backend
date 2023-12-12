@@ -10,22 +10,66 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.0/ref/settings/
 """
 
+import os
+from datetime import timedelta
 from pathlib import Path
 
+from dotenv import load_dotenv
+
+load_dotenv()
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
-BASE_DIR = Path(__file__).resolve().parent.parent
+BASE_DIR = Path(__file__).resolve().parent
 
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.0/howto/deployment/checklist/
 
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-%49dx56_z6%l2agx1x9e2qk0q_&a-4+qlp2+**&p-!)*06w^%7'
+SECRET_KEY = os.getenv("SECRET_KEY")
+JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY")
+REGISTRATION_JWT_KEY = os.getenv("REGISTRATION_JWT_KEY")
+TOKEN_LIFETIME_UNIT = os.getenv("ACCESS_TOKEN_LIFETIME_UNIT", "minutes")
+TOKEN_LIFETIME = int(os.getenv("ACCESS_TOKEN_LIFETIME", 5))
+
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(**{TOKEN_LIFETIME_UNIT: TOKEN_LIFETIME}),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
+    'ROTATE_REFRESH_TOKENS': True,
+    'BLACKLIST_AFTER_ROTATION': True,
+    'SIGNING_KEY': JWT_SECRET_KEY,
+}
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.getenv("DEBUG", True)
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS').split(',')
+HOSTNAME = os.getenv("HOSTNAME")
+CSRF_TRUSTED_ORIGINS = os.environ.get('CSRF_TRUSTED_ORIGINS').split(',')
+
+REST_FRAMEWORK = {
+    'EXCEPTION_HANDLER': 'user_management.exception_handler.custom_exception_handler',
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    )
+}
+
+# Swagger
+
+SWAGGER_SETTINGS = {
+    'SECURITY_DEFINITIONS': {
+        "Auth Token eg [Bearer (JWT) ]": {
+            "type": "apiKey",
+            "name": "Authorization",
+            "in": "header"
+        }
+    }
+}
+
+# Celery
+
+CELERY_IMPORTS = (
+    "user_management.utils",
+)
 
 
 # Application definition
@@ -37,6 +81,15 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django_extensions',
+    'drf_yasg',
+    'corsheaders',
+    'django_filters',
+    'user_management.apps.authentication',
+    'rest_framework_simplejwt.token_blacklist',
+    'django_celery_results',
+    'django_celery_beat',
+    'drf_api_logger'
 ]
 
 MIDDLEWARE = [
@@ -47,14 +100,28 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
+    'drf_api_logger.middleware.api_logger_middleware.APILoggerMiddleware',
 ]
 
 ROOT_URLCONF = 'user_management.urls'
 
+# DRF_API_LOGGER
+
+DRF_API_LOGGER_EXCLUDE_KEYS = ['password', 'token', 'refresh_token']
+DRF_API_LOGGER_PATH_TYPE = 'FULL_PATH'
+DRF_API_LOGGER_DATABASE = True
+
+ROOT_URLCONF = 'user_management.urls'
+
+MEDIA_ROOT = [os.path.join(BASE_DIR, 'static/media')]
+
+MEDIA_URL = '/media/'
+
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [os.path.join(BASE_DIR, 'templates')],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -99,6 +166,7 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
+STATIC_ROOT = os.path.join(BASE_DIR, "static/")
 
 # Internationalization
 # https://docs.djangoproject.com/en/5.0/topics/i18n/
@@ -121,3 +189,20 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+AUTH_USER_MODEL = 'authentication.User'
+TOKEN_EXPIRED_AFTER = timedelta(days=2)
+EMAIL_BACKEND = os.getenv("EMAIL_BACKEND")
+EMAIL_HOST = os.getenv('EMAIL_HOST')
+EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER')
+EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')
+EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS')
+EMAIL_PORT = os.getenv('EMAIL_PORT')
+DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL')
+
+ADMIN_EMAIL = os.getenv('ADMIN_EMAIL')
+FRONT_END_URL = os.getenv('FRONT_END_URL')
+SWAGGER_URL = os.getenv('SWAGGER_URL')
+
+CELERY_RESULT_BACKEND = 'django-db'
+CELERY_CACHE_BACKEND = 'django-cache'
+CELERY_BROKER_URL = os.getenv("CELERY_BROKER_URL")
