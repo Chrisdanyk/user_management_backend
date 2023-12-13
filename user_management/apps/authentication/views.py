@@ -9,9 +9,10 @@ from django.template.loader import render_to_string
 from django.urls import reverse
 from django.utils.encoding import force_str, smart_bytes
 from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
+from django_filters.rest_framework import DjangoFilterBackend
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
-from rest_framework import generics, mixins, status
+from rest_framework import filters, generics, mixins, status
 from rest_framework.permissions import IsAdminUser, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -23,6 +24,7 @@ from user_management.exception_handler import (
     InvalidTokenException,
     NotFoundException,
 )
+from user_management.pagination import CustomPageNumberPagination
 from user_management.permissions import AdminPermission
 from user_management.settings import (
     FRONT_END_URL, HOSTNAME, REGISTRATION_JWT_KEY)
@@ -130,6 +132,13 @@ class CreateUserView(generics.CreateAPIView):
 
 
 class GetUsersView(mixins.ListModelMixin, BaseUserView):
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter,
+                       filters.OrderingFilter]
+    filterset_fields = ['id', 'username', 'email']
+    search_fields = ['id', 'username', 'email']
+    ordering_fields = ['id', 'username', 'email']
+    pagination_class = CustomPageNumberPagination
+
     def get(self, request, *args, **kwargs):
         self.serializer_class = UserSerializer
         return self.list(request, *args, **kwargs)
