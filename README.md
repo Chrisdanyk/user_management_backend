@@ -12,7 +12,6 @@ The system is responsible for managing user data, including:
 - Create a virtual environement using this command: `python3 -m venv venv`
 - Activate the environement with `source venv/bin/activate`
 - Install the dependencies with `pip install -r requirements.txt`
-- Apply migrations with `python3 manage.py migrate`
 - Create a `.env` in the root folder and populate with values needed,
   here is an example:
 
@@ -39,10 +38,11 @@ FRONT_END_URL=https://frontend.com
 SWAGGER_URL=http://127.0.0.1:8000
 ```
 
-- Create an initial user named `admin` with a password with `python3 manage.py createsuperuser --username admin --email admin@example.com`. Please change the admin name and the email at your convenience. You'll authenticate as that user.
+- Apply migrations with `python3 manage.py migrate`
+- Create an initial user with `python3 manage.py createsuperuser`. You'll authenticate as that user.
 - Start the app with `python3 manage.py runserver` and access your app on `http://localhost:8000` where you will land on the api documentation.
 
-- Start an other tab inside your terminal to run rabbit_mq as follow (used for asynchronous sending of emails):
+- Start an other tab inside your terminal to run celery tasks as follow (used for asynchronous sending of emails):
   `celery -A user_management worker -l INFO`
 
 # Run Tests
